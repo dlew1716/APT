@@ -7,16 +7,7 @@ import struct
 from pylab import *
 import scipy.signal as signal
 
-
-
-
-# if available import pylab (from matlibplot)
-
-
-#% Automatic Picture Transmission (APT) Decoding
-#% Developed by Bill Dower, Kawaya Swana Eric Mbaka, Mark Roland, Vijo Varghese
-#% at the University of Kansas Electrical Engineering Department, May 2006
-#%%WXSat demodulation
+#pleb
 
 
 
