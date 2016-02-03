@@ -6,11 +6,9 @@ import wave
 import struct
 from pylab import *
 import scipy.signal as signal
-import scipy.interpolate as interpolate
+from scipy.interpolate import RectBivariateSpline
 
 #pleb
-
-
 
 def wavLoad (fname):
     wav = wave.open (fname, "r")
@@ -157,7 +155,13 @@ for j in np.arange(1., (np.size(synclocs))+1):
 
 imagemat = np.flipud(imagemat)
 imagemat = np.fliplr(imagemat)
-print 'done'
+
+rows = np.arange(0,imagemat.shape[0])
+cols = np.arange(0,imagemat.shape[1])
+
+
+
+print imagemat.shape
 
 plt.imshow(imagemat,cmap = cm.Greys_r)
 plt.show()
