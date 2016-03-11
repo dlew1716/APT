@@ -6,6 +6,8 @@ import wave
 import struct
 from pylab import *
 import scipy.signal as signal
+import cv2
+import scipy.misc
 from scipy.interpolate import RectBivariateSpline
 
 #pleb
@@ -25,7 +27,7 @@ def wavLoad (fname):
 
 
 
-location = 'N18_4827.wav'
+location = 'output_best.wav'
 WaveFile = wavLoad(location)
 sigarr = wavLoad(location)[0]
 sampRate = double(wavLoad(location)[1])
@@ -67,7 +69,7 @@ sigarr = np.subtract(sigarr,np.mean(sigarr))
 
 
 #Design Filter
-fir_coeff = signal.firwin(3, cutoff_hz/(sampRate/2))
+fir_coeff = signal.firwin(13, cutoff_hz/(sampRate/2))
 
 #rectify
 sigarr = np.absolute(sigarr)
@@ -160,11 +162,11 @@ rows = np.arange(0,imagemat.shape[0])
 cols = np.arange(0,imagemat.shape[1])
 
 
+outimg=cv2.resize(imagemat,(2080,imagemat.shape[0]), interpolation = cv2.INTER_CUBIC)
 
-print imagemat.shape
+scipy.misc.imsave('test.png',outimg)
 
-plt.imshow(imagemat,cmap = cm.Greys_r)
-plt.show()
+print 'saved image'
 
 # while True:
 #     time.sleep(.2)
