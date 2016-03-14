@@ -22,7 +22,7 @@ double butter_11025_13_order[13] = {-0.00132381, 0.0029468, 0.02127082, 0.064461
 //fix where you shift in only 2 bytes into integer
 
 
-main() {
+int main() {
 
 	FILE * fp;
 	FILE * pFile;
