@@ -93,10 +93,10 @@ t = np.array(np.hstack((np.arange(0., (1./160.)+(1./sampRate), 1./sampRate))))
 cA = signal.square(1040*t*(2*pi),0.5)
 #%%Creates the expected sync pulse
 
-hA = np.convolve(cA,sigarr)
+hA = np.convolve(sigarr,cA)
 
 #%%Preforms the correlation
-syncA = hA[int(np.size(cA))-1:np.size(hA)]
+syncA = hA
 
 
 #%%Removes the convolution tails
