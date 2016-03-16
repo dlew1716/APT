@@ -17,6 +17,7 @@ int subChunk2Size(FILE * fp, unsigned char * buf);
 double *conv(double *A, double *B, int lenA, int lenB, int *lenC);
 double *outconv;
 int lenC=0;
+int lenhA =0;
 double butter_11025_13_order[13] = {-0.00132381, 0.0029468, 0.02127082, 0.06446164,  0.12649509, 0.18309832, 0.20610228, 0.18309832, 0.12649509, 0.06446164, 0.02127082, 0.0029468, -0.00132381};
 
 //fix where you shift in only 2 bytes into integer
@@ -40,7 +41,7 @@ int main() {
 	int bitSamp = 0;
 	int blockSize = 0;
 	int audioBufSize = 0;
-	int fs = 0;
+	double fs = 11025;
 
  	//buf = (unsigned char *) realloc(buf,(int)buf[4]+(int)buf[5]+(int)buf[6]+(int)buf[7]);
 
@@ -86,21 +87,41 @@ int main() {
 
 		int * abuf;
 		double * bbuf;
-		int * sqbuf;
+		double * sqbuf;
+		double * hA;
 		abuf = (int *) malloc(audioBufSize/sizeof(unsigned char)*sizeof(int));
 		bbuf = (double *) malloc(audioBufSize/sizeof(unsigned char)*sizeof(double));
 
-		int sqbufsize = floor(39.0*fs/4160.0);  // Ts of sync wave
+
+		int sqbufsize = floor(32.0*fs/4160.0);  // Ts of sync wave
+		double tau = 1.0/4160.0;
+		double timeCount = 0;
 		printf("Square Pulse Array Size:  ");
 		printf("%d\n",sqbufsize);
 
-		sqbuf = (int *) malloc(sqbufsize/sizeof(unsigned char)*sizeof(int));
+		sqbuf = (double *) malloc(sqbufsize/sizeof(unsigned char)*sizeof(double));
 
 		for(int i = 0;i<sqbufsize;i++){
 
-			//if()
+			timeCount = timeCount + (1.0/fs);
+			sqbuf[i] = 0;
+
+			for(int j =0; j<28;j=j+4){
+
+				// printf("%f\n",(4*j)*tau );
+				// printf("%f\n",(6*j)*tau );
+				// printf("%f\n\n",timeCount );
+
+				if(timeCount<((6+j)*tau) && timeCount>=((4+j)*tau)){
+
+					sqbuf[i] = 1;
+
+				}
 
 
+			}
+			//printf("%d\n", sqbuf[i]);
+			//printf("-------------\n");
 
 		}
 
@@ -120,6 +141,7 @@ int main() {
 
 	double maxAmp = abs(abuf[0]);
 	double sumVal = 0;
+	int maxAmpIndex = 0;
 
 	for(int i =0;i<audioBufSize/2;i++){
 
@@ -190,6 +212,106 @@ int main() {
 
 	}
 
+	hA = conv(outconv,sqbuf,lenC,sqbufsize,&lenhA);
+	printf("Square Pulse Convolution Done\n");
+
+	maxAmp =0.0;
+
+	for(int i = 0;i<lenhA;i++){
+
+		if(maxAmp < hA[i]){
+
+			maxAmp = hA[i];
+			maxAmpIndex = i;
+		}
+
+
+	}
+	printf("Max Amplitude of Coorelated Signal:  ");
+	printf("%f\n",maxAmp);
+	printf("Index of Max Amplitude:  ");
+	printf("%d\n",maxAmpIndex);
+
+	int sampsbefore = floor(maxAmpIndex/(fs/2));
+	int sampsafter = floor((lenhA-maxAmpIndex)/(fs/2));
+	int Q =0;
+	int j ;
+	double locMax;
+	int locMaxIndex;
+	Q = floor(maxAmpIndex - (fs/2));
+	int search =7; //move to user configurable, change with samp rate?
+
+	int * synclocs;
+	synclocs = (int *) malloc((sampsbefore+sampsafter+1)*sizeof(int));
+
+	for(int i = 0; i< sampsbefore;i++){
+		//printf("do work\n");
+
+		locMax = 0;
+		for(j =floor(Q-(fs/search));j<floor(Q+(fs/search));j++){
+
+			if(hA[j] > locMax){
+
+				locMax = hA[j];
+				locMaxIndex = j;
+
+				
+			}
+			
+		}
+		synclocs[sampsbefore -i-1] = locMaxIndex;
+		//printf("%d\n",locMaxIndex );
+		Q = locMaxIndex - floor(fs/2);
+
+	}
+
+
+
+	synclocs[sampsbefore] = maxAmpIndex;
+
+	Q = floor(maxAmpIndex + (fs/2));
+	for(int i = 0; i< sampsafter;i++){
+		//printf("do work\n");
+
+		locMax = 0;
+		for(j =floor(Q-(fs/search));j<floor(Q+(fs/search));j++){
+
+			if(hA[j] > locMax){
+
+				locMax = hA[j];
+				locMaxIndex = j;
+				
+			}
+			
+		}
+		synclocs[sampsbefore+i+1] = locMaxIndex;
+		//printf("%d\n",locMaxIndex);
+		//printf("%d\n",sampsafter+sampsbefore+1 );
+
+		Q = locMaxIndex + floor(fs/2);
+
+	}
+
+	
+	double **img =(double**) malloc((sampsbefore+sampsafter+1)*sizeof(double*));
+
+	for(int i=0;i<sampsbefore+sampsafter+1;i++){
+
+		img[i] = (double*)malloc(floor(fs/2)*sizeof(double));
+		for(int j = 0;j < floor(fs/2);j++){
+
+			img[i][j] = outconv[synclocs[i]+j];
+		}
+	}
+
+
+
+
+	// for(int i =0;i< (sampsbefore+sampsafter+1);i++){
+
+	// 	printf("%d\n",synclocs[i] );
+
+	// }
 	
 	printf("DONE\n");
 	fclose(fp);
@@ -363,7 +485,7 @@ double *conv(double *A, double *B, int lenA, int lenB, int *lenC)
 	//allocated convolution array	
 	nconv = lenA+lenB-1;
 	C = (double*) calloc(nconv, sizeof(double));
- 
+
 	//convolution process
 	for (i=0; i<nconv; i++)
 	{
@@ -377,8 +499,9 @@ double *conv(double *A, double *B, int lenA, int lenB, int *lenC)
 			i1 = i1-1;
 			C[i] = tmp;
 		}
+
 	}
- 
+ 	
 	//get length of convolution array	
 	(*lenC) = nconv;
 
@@ -386,4 +509,6 @@ double *conv(double *A, double *B, int lenA, int lenB, int *lenC)
 	//return convolution array
 	return(C);
 }
+
+
 
