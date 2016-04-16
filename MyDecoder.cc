@@ -4,6 +4,9 @@
 #include <string.h>
 #include <math.h>
 
+
+
+
 bool isRiff(FILE * fp,unsigned char * buf);
 int fileSize(FILE * fp, unsigned char * buf);
 bool isWave(FILE * fp,unsigned char * buf);
@@ -14,11 +17,18 @@ int sampRate(FILE * fp, unsigned char * buf);
 int blockAlign(FILE * fp, unsigned char * buf);
 int bitPerSamp(FILE * fp, unsigned char * buf);
 int subChunk2Size(FILE * fp, unsigned char * buf);
+double *filterBUT(double * B, double * A, double * X, double * Zi, int input_size, int filter_order);
 double *conv(double *A, double *B, int lenA, int lenB, int *lenC);
 double *outconv;
 int lenC=0;
 int lenhA =0;
-double butter_11025_13_order[13] = {-0.00132381, 0.0029468, 0.02127082, 0.06446164,  0.12649509, 0.18309832, 0.20610228, 0.18309832, 0.12649509, 0.06446164, 0.02127082, 0.0029468, -0.00132381};
+//double butter_11025_13_order[13] = {-0.00132381, 0.0029468, 0.02127082, 0.06446164,  0.12649509, 0.18309832, 0.20610228, 0.18309832, 0.12649509, 0.06446164, 0.02127082, 0.0029468, -0.00132381};
+//double Bcoe[14] = {1.0528e-08,1.3686e-07,8.2117e-07,3.011e-06,7.5274e-06,1.3549e-05,1.8066e-05,1.8066e-05,1.3549e-05,7.5274e-06,3.011e-06,8.2117e-07,1.3686e-07,1.0528e-08};
+//double Acoe[14] = {1,-8.2743,32.202,-77.874,130.33,-159.19,145.82,-101.33,53.371,-21.028,6.0201,-1.1853,0.14378,-0.0081112};
+//double Zi[14] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+double Bcoe[3] = {.0572,.1144,.0572};
+double Acoe[3] = {1.0,-1.2189,.477};
+double Zi[3] = {0,0,0};
 
 //fix where you shift in only 2 bytes into integer
 
@@ -174,19 +184,26 @@ int main() {
 	}
 	free(abuf);
 
-	outconv = conv(bbuf,butter_11025_13_order,audioBufSize/2,13,&lenC);
+	outconv = filterBUT(Bcoe,Acoe,bbuf,Zi,audioBufSize/2,3);
+
+	// for(int i =0; i<audioBufSize/2;i++){
+
+	// 	printf("%f\n",outconv[i] );
+	// }
+
 	free(bbuf);
 	printf("Convolved\n");
 
 	sumVal =0.0;
 	maxAmp =0.0;
 
-	for(int i =0;i<lenC;i++){
+	for(int i =0;i<audioBufSize/2;i++){
 
 		
 		if(maxAmp<fabs(outconv[i])){
 
 			maxAmp = fabs(outconv[i]);
+
 
 
 		}
@@ -195,24 +212,24 @@ int main() {
 
 	}
 
-	avgVal = sumVal/lenC/maxAmp;
+	avgVal = sumVal/(audioBufSize/2)/maxAmp;
 	printf("Max Amplitude After Conv:  ");
 	printf("%f\n",maxAmp );
 	printf("Average Normalized Value After Conv:  ");
 	printf("%f\n",avgVal );
 
-	for(int i =0;i<lenC;i++){
+	for(int i =0;i<audioBufSize/2;i++){
 
 		outconv[i] = (outconv[i]/-avgVal)/maxAmp;
 
 		if(outconv[i]<0){
 			outconv[i] = -1*outconv[i];
 		}
-
+		
 
 	}
 
-	hA = conv(outconv,sqbuf,lenC,sqbufsize,&lenhA);
+	hA = conv(outconv,sqbuf,audioBufSize/2,sqbufsize,&lenhA);
 	printf("Square Pulse Convolution Done\n");
 
 	maxAmp =0.0;
@@ -294,15 +311,51 @@ int main() {
 
 	
 	double **img =(double**) malloc((sampsbefore+sampsafter+1)*sizeof(double*));
-
+	maxAmp = 0;
 	for(int i=0;i<sampsbefore+sampsafter+1;i++){
 
-		img[i] = (double*)malloc(floor(fs/2)*sizeof(double));
+		img[i] = (double*)malloc(double(fs/2)*sizeof(double));
 		for(int j = 0;j < floor(fs/2);j++){
 
 			img[i][j] = outconv[synclocs[i]+j];
+			if(img[i][j]>maxAmp){
+
+				
+				// if(img[i][j]>30.0){
+
+				// 	img[i][j] =0.0;
+
+				// }
+				maxAmp = img[i][j];
+				
+				//printf("%f\n",img[i][j] );
+
+			}
+			
 		}
 	}
+	// printf("%f\n",maxAmp );
+
+	// for(int i=0;i<sampsbefore+sampsafter+1;i++){
+
+		
+	// 	for(int j = 0;j < floor(fs/2);j++){
+
+	// 		img[i][j] = img[i][j]/maxAmp;
+	// 		//printf("%f\n",img[i][j] );
+
+	// 	}
+	// }
+
+	// vector<int> compression_params;
+ //    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
+ //    compression_params.push_back(9);
+    //float datak[2][5] = {{1,2,3,4,5},{7,8,9,10,11}};
+    
+
+	//Mat A = Mat(sampsbefore+sampsafter+1, floor(fs/2), CV_64FC1, img);
+
+	
 
 
 
@@ -512,3 +565,23 @@ double *conv(double *A, double *B, int lenA, int lenB, int *lenC)
 
 
 
+double *filterBUT(double * B, double * A, double * X, double * Zi, int input_size, int filter_order)
+{
+
+    double * Y = (double *) malloc(input_size*sizeof(double));
+
+    for (int i = 0; i < input_size; ++i)
+    {
+        int order = filter_order - 1;
+        while (order)
+        {
+            if (i >= order)
+                Zi[order - 1] = B[order] * X[i - order] - A[order] * Y[i - order] + Zi[order];
+            --order;
+        }
+        Y[i] = B[0] * X[i] + Zi[0];
+        //printf("%f\n",Y[i] );
+    }
+    //Zi.resize(filter_order - 1);
+    return Y;
+}
