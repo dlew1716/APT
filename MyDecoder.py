@@ -27,7 +27,7 @@ def wavLoad (fname):
 
 
 
-location = 'output_best.wav'
+location = 'HerroOut2.wav'
 WaveFile = wavLoad(location)
 sigarr = wavLoad(location)[0]
 sampRate = double(wavLoad(location)[1])
@@ -164,7 +164,9 @@ cols = np.arange(0,imagemat.shape[1])
 
 outimg=cv2.resize(imagemat,(2080,imagemat.shape[0]), interpolation = cv2.INTER_CUBIC)
 
-scipy.misc.imsave('test.png',outimg)
+outimg = np.multiply(np.add(outimg,amin(outimg)*-1),(255/amin(outimg)*-1))
+
+scipy.misc.imsave('testpy.png',outimg)
 
 print 'saved image'
 
