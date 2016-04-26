@@ -102,16 +102,49 @@ def checkOverlap(satPass):
 
 	return satPass
 
-def clientTransfer():
+def clientTransfer(fileName):
+	fileNombre = fileName
 
 	s = socket.socket()
 	s.connect(("localhost",9999))
-	f=open ("temp.wav", "rb") 
+	fileName.rjust(len(fileName) + 12, '+')
+	fileName = fileName[len(fileName)-13:len(fileName)]
+	s.send(fileName)
+	f=open (fileNombre+'.wav', "rb") 
 	l = f.read(1024)
 	while (l):
 	    s.send(l)
 	    l = f.read(1024)
-	s.close()
+	s.close
+
+
+# def clientTransferText(stringthing):
+
+# 	s = socket.socket()
+# 	s.connect(("localhost",9999))
+# 	s.send(stringthing)
+# 	s.close()
+
+def transferImages():
+	count =0
+	
+	manifest = pickle.load(open("man.dat","rb"))
+
+	for x in manifest:
+		if x[1] ==0:
+			count = count +1
+		if x[1] ==1:
+			del x
+	print count, ' Files to send'
+
+	for x in manifest:
+		if x[1] ==0:
+			clientTransfer(str(x[0]))
+			x[1] =1
+			del x
+
+	pickle.dump(manifest,open("man.dat","wb")) 
+	
 
 
 def signal_handling(signum,frame):
@@ -180,14 +213,32 @@ while True:
 			nextEvent[5].compute(atl)
 			sys.stdout.write('\r' + 'Current Alt' + str(nextEvent[5].alt) + ' ' * 20)
 			sys.stdout.flush() 
-			time.sleep(0.1)
-
+			#time.sleep(0.1)
+			time.sleep(2) #TEMP
+			y = 0
 
 
 
 		os.killpg(os.getpgid(pro.pid), signal.SIGTERM)
 		manifest.append([timeStamp,0])
 		pickle.dump(manifest,open("man.dat","wb")) # make a copy of this before socket reads it? TODO
+
+		#time.strptime(str(x),"%Y/%m/%d %H:%M:%S")
+
+		CurrentTime = time.mktime(time.strptime(str(ephem.now()),"%Y/%m/%d %H:%M:%S"))
+		upcomingPassTime = time.mktime(time.strptime(str(satPass[1][2]),"%Y/%m/%d %H:%M:%S"))
+
+		tdelta = upcomingPassTime - CurrentTime
+
+		if tdelta > 3600:
+			print 'gucci'
+
+			transferImages()
+			#Send socket
+			#update tle
+
+
+
 
 
 
