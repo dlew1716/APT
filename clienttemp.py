@@ -2,8 +2,9 @@ import socket
 import time
 
 s = socket.socket()
-s.connect(("127.0.0.1",9999))
+s.connect(("localhost",9999))
 f=open ("recording.wav", "rb") 
+s.send('herro')
 l = f.read(1024)
 while (l):
     s.send(l)
