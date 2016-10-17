@@ -10,17 +10,12 @@ import copy
 import pickle
 import thread
 import socket
+import datetime
+import base64
+import requests
 
 
 sats = ['NOAA 15','NOAA 18','NOAA 19'] #Names must be complete
-try:
-	manifest = pickle.load(open("man.dat","rb"))
-except:
-	pickle.dump([],open("man.dat","wb"))
-	manifest = pickle.load(open("man.dat","rb"))
-
-
-
 
 
 def updateTLE(sats):
@@ -173,8 +168,8 @@ for x in satPass2: # Delete the tracked object in the copy, no need to print tha
 	del x[5]
 
 for x in satPass2: # convert time to strings for printing
-	x[1] = str(x[1])
-	x[2] = str(x[2])
+	x[1] = str(ephem.localtime(x[1])).split(".")[0]
+	x[2] = str(ephem.localtime(x[2])).split(".")[0]
 	x[3] = str(round(x[3],2)) + u'°'
 
 satPass2.insert(0,['Name + Status','Start Time','End Time','Elevation','Overlap?']) # Title of printed table
@@ -197,7 +192,7 @@ while True:
 
 	if float(nextEvent[2]) > float(ephem.now()) > float(nextEvent[1]) or y:
 
-		timeStamp = time.time()
+		timeStamp = datetime.datetime.now().strftime('%Y-%m-%dT%Hz%Mz%S')
 
 		pro = subprocess.Popen('rtl_fm -g 20 -f 91.1M -M fm -s 200k -r 11025 -E deemp | sox -t raw -e signed -c 1 -b 16 -r 11025 - '+ str(timeStamp)+'.wav', shell=True, preexec_fn=os.setsid)
 		time.sleep(5)
@@ -220,28 +215,28 @@ while True:
 
 
 		os.killpg(os.getpgid(pro.pid), signal.SIGTERM)
-		manifest.append([timeStamp,0])
-		pickle.dump(manifest,open("man.dat","wb")) # make a copy of this before socket reads it? TODO
-
-		#time.strptime(str(x),"%Y/%m/%d %H:%M:%S")
-
-		CurrentTime = time.mktime(time.strptime(str(ephem.now()),"%Y/%m/%d %H:%M:%S"))
-		upcomingPassTime = time.mktime(time.strptime(str(satPass[1][2]),"%Y/%m/%d %H:%M:%S"))
-
-		tdelta = upcomingPassTime - CurrentTime
-
-		if tdelta > 3600:
-			print 'gucci'
-
-			transferImages()
-			#Send socket
-			#update tle
 
 
 
+		f=open(timeStamp+".wav", "rb") 
 
+		data = f.read()
+		b64data = base64.b64encode(data)
 
+		postdata = {'wav':b64data,'date':timeStamp}
 
+		res = requests.post('http://127.0.0.1:8080',postdata)
+
+		f.close
+
+		time.sleep(.1)
+
+		print 'Pass Complete'
+
+		trackedObjs = updateTLE(sats) #update from network
+		events = nextTenEvents(trackedObjs,'Atlanta') # get list of next ten passes
+		satPass = checkOverlap(events)
+		nextEvent = satPass[0]
 
 
 
@@ -254,12 +249,3 @@ while True:
 	atl.date = ephem.now()
 	nextEvent[5].compute(atl)
 
-
-
-
-
-
-
-
-# print satPass 
-# print trackedObjs[0].name

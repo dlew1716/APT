@@ -5,7 +5,7 @@ def TLEreaderW(sats):
 	"""Pulls NOAA TLE files from celestrak and pulls out the currently active (as of March 2016) NOAA weather 
 	satellites TLE's"""
 
-	r = requests.get('https://www.celestrak.com/NORAD/elements/noaa.txt')
+	r = requests.get('http://www.celestrak.com/NORAD/elements/noaa.txt')
 
 	if(r.status_code != 200):
 		print 'TLE network error'
