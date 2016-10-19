@@ -12,9 +12,6 @@
 #include "opencv2/imgcodecs/imgcodecs.hpp"
 
 
-
-
-
 bool isRiff(FILE * fp,unsigned char * buf);
 int fileSize(FILE * fp, unsigned char * buf);
 bool isWave(FILE * fp,unsigned char * buf);
@@ -26,7 +23,7 @@ int blockAlign(FILE * fp, unsigned char * buf);
 int bitPerSamp(FILE * fp, unsigned char * buf);
 int subChunk2Size(FILE * fp, unsigned char * buf);
 double *filterBUT(double * B, double * A, double * X, double * Zi, int input_size, int filter_order);
-double *conv(double *A, double *B, int lenA, int lenB, int *lenC);
+double *conv(double *A,  int lenA, double *B,int lenB, int *lenC,char *cmethod);
 double *outconv;
 int lenC=0;
 int lenhA =0;
@@ -37,24 +34,46 @@ int lenhA =0;
 double Bcoe[3] = {.0572,.1144,.0572};
 double Acoe[3] = {1.0,-1.2189,.477};
 double Zi[3] = {0,0,0};
+char convmode[] = "full";
 
 //fix where you shift in only 2 bytes into integer
 
 
-int main() {
+int main(int argc, char *argv[] ) {
 
-	std::ofstream outfile;
-	outfile.open("result.csv");
+	//DEBUG FILES
+	// std::ofstream procwav;
+	// procwav.open("procwav.csv");
+	// std::ofstream sqrwav;
+	// sqrwav.open("sqrwav.csv");
+	// std::ofstream resultwav;
+	// resultwav.open("resultwav.csv");
+	// std::ofstream synclocsfile;
+	// synclocsfile.open("synclocsfile.csv");
 
 	FILE * fp;
 	FILE * pFile;
 	
-	fp = fopen("satmatt3.wav","rb");
+	if ( argc != 3 ){
 
-	if(!fp){
-		printf("Unable to open file");
+		printf("Error, Wrong Number of Arguments\nUsage: ./Decoder input.wav output.png\n");
 		return 1;
+
 	}
+	else{
+
+		fp = fopen(argv[1],"rb");
+
+		if (fp==NULL){
+
+			printf("Could not open: ");
+			printf("%s\n",argv[1]);
+			printf("\n");
+			return 1;
+
+		}
+	}
+
 	//buffer 4 bytes at a time
 	unsigned char * buf;
 	buf = (unsigned char *) malloc(4);
@@ -110,6 +129,7 @@ int main() {
 		double * obuf;
 		int * cbuf;
 		double * sqbuf;
+		//double * sqbuf2;
 		double * hA;
 		abuf = (double *) malloc(audioBufSize/sizeof(unsigned char)*sizeof(double));
 		cbuf = (int *) malloc(audioBufSize/sizeof(unsigned char)*sizeof(int));
@@ -123,6 +143,7 @@ int main() {
 		printf("%d\n",sqbufsize);
 
 		sqbuf = (double *) malloc(sqbufsize/sizeof(unsigned char)*sizeof(double));
+		//sqbuf2 = (double *) malloc(sqbufsize/sizeof(unsigned char)*sizeof(double));
 
 
 		double sT = 1/4160.0;
@@ -130,7 +151,7 @@ int main() {
 
 		for(int i = 0;i<sqbufsize;i++){
 
-			sqbuf[i] = sin(freq * i)>=0?1:0;
+			sqbuf[i] = sin(freq * i)>=0?1:-1;
 
 			if(i<floor(4*fs*sT)){
 				sqbuf[i] = 0;
@@ -139,48 +160,27 @@ int main() {
 
 				sqbuf[i] = 0;
 			}
+			// sqrwav << "," << sqbuf[i];
 			
 		}
 
 
-
-
-
 		// for(int i = 0;i<sqbufsize;i++){
 
-		// 	timeCount = timeCount + (1.0/fs);
-		// 	sqbuf[i] = 0;
+		// 	sqbuf2[i] = sin(freq * i)+0.7>=0?1:-1;
 
-		// 	for(int j =0; j<28;j=j+4){
-
-		// 		// printf("%f\n",(4*j)*tau );
-		// 		// printf("%f\n",(6*j)*tau );
-		// 		// printf("%f\n\n",timeCount );
-
-		// 		if(timeCount<((6+j)*tau) && timeCount>=((4+j)*tau)){
-
-		// 			sqbuf[i] = 1;
-
-		// 		}
-
-
+		// 	if(i<floor(4*fs*sT)){
+		// 		sqbuf2[i] = 0;
 		// 	}
-		// 	//printf("%d\n", sqbuf[i]);
-		// 	//printf("-------------\n");
+
 			
-		// 	outfile<<","<<sqbuf[i];
 		// }
 
 
 		for(int i = 0;i<audioBufSize/2;i++){
 
 			abuf[i] = int16_t(buf[i*2] | ( (int16_t)buf[i*2+1] << 8 ) | ( 0 << 16 ) | ( 0 << 24 ));
-			
-			
-			//printf("%d\n",abuf[i] );
-			//3839815
-			
-			
+
 		}
 
 
@@ -212,10 +212,6 @@ int main() {
 		abuf[i] = abuf[i]/maxAmp;
 
 
-		// if(bbuf[i]<0){
-		// 	bbuf[i] = -1*bbuf[i];
-		// }
-
 	}
 	//find mean
 	for(int i =0;i<audioBufSize/2;i++){
@@ -235,23 +231,18 @@ int main() {
 
 		abuf[i] = abuf[i]-avgVal;
 
-		// if(bbuf[i]<0){
-		// 	bbuf[i] = -1*bbuf[i];
-		// }
-
 	}
 	//Rectify
 	for(int i =0;i<audioBufSize/2;i++){
 
-
 		if(abuf[i]<0){
+
 			abuf[i] = -1*abuf[i];
 		}
 		
 	}
 
 //	outconv = filterBUT(Bcoe,Acoe,abuf,Zi,audioBufSize/2,3);
-
 
 	Filter *my_filter;
 	double filtered_sample;
@@ -269,21 +260,12 @@ int main() {
 	delete my_filter;
 	outconv = abuf;
 
-
 	printf("Convolved with filter\n");
 
 	sumVal =0.0;
 	maxAmp =0.0;
 
 	for(int i =0;i<audioBufSize/2;i++){
-
-		
-		// if(maxAmp<fabs(outconv[i])){
-
-		// 	maxAmp = fabs(outconv[i]);
-
-		// }
-		//outfile<<","<<outconv[i];
 
 		sumVal = sumVal + outconv[i];
 
@@ -314,19 +296,12 @@ int main() {
 	for(int i =0;i<audioBufSize/2;i++){
 
 		outconv[i] = (outconv[i]/maxAmp);
- 		
-
-	}
-
-
-
-	hA = conv(outconv,sqbuf,audioBufSize/2,sqbufsize,&lenhA);
-
-	for(int i =0;i<lenhA;i++){
-
+		// procwav << "," << outconv[i];
 		
-
+ 		
 	}
+
+	hA = conv(outconv,audioBufSize/2,sqbuf,sqbufsize,&lenhA,convmode);
 
 	printf("Square Pulse Convolution Done\n");
 
@@ -340,10 +315,7 @@ int main() {
 			maxAmpIndex = i;
 		}
 
-
 	}
-
-
 
 	printf("Max Amplitude of Coorelated Signal:  ");
 	printf("%f\n",maxAmp);
@@ -352,12 +324,14 @@ int main() {
 
 	int sampsbefore = floor(maxAmpIndex/(fs/2))-5;
 	int sampsafter = floor((lenhA-maxAmpIndex)/(fs/2))-5;
-	int Q =0;
+	// sampsafter = 25;
+	// sampsbefore = 25;
+	double Q =0;
 	int j ;
 	double locMax;
 	int locMaxIndex;
 	Q = floor(maxAmpIndex - (fs/2));
-	int search =7; //move to user configurable, change with samp rate?
+	double search =5; //move to user configurable, change with samp rate?
 	printf("Searching Back\n");
 	int * synclocs;
 	synclocs = (int *) malloc((sampsbefore+sampsafter+1)*sizeof(int));
@@ -368,18 +342,17 @@ int main() {
 		//printf("do work\n");
 
 		locMax = 0;
-		for(j =floor(Q-(fs/search));j<floor(Q+(fs/search));j++){
+		for(j = floor(Q-(fs/search))-1;j<floor(Q+(fs/search));j++){
 
 			if(hA[j] > locMax){
 
 				locMax = hA[j];
 				locMaxIndex = j;
 
-				
 			}
 			
 		}
-		synclocs[sampsbefore -i-1] = locMaxIndex;
+		synclocs[sampsbefore - i - 1] = locMaxIndex+1;
 		//printf("%d\n",locMaxIndex );
 		Q = locMaxIndex - floor(fs/2);
 
@@ -387,7 +360,7 @@ int main() {
 
 
 
-	synclocs[sampsbefore] = maxAmpIndex;
+	synclocs[sampsbefore] = maxAmpIndex+1;
 
 	printf("Searching Forward\n");
 
@@ -396,7 +369,7 @@ int main() {
 		//printf("do work\n");
 
 		locMax = 0;
-		for(j =floor(Q-(fs/search));j<floor(Q+(fs/search));j++){
+		for(j =floor(Q-(fs/search))-1;j<floor(Q+(fs/search));j++){
 
 			if(hA[j] > locMax){
 
@@ -406,18 +379,14 @@ int main() {
 			}
 			
 		}
-		synclocs[sampsbefore+i+1] = locMaxIndex;
+		synclocs[sampsbefore+i+1] = locMaxIndex+1;
 		//printf("%d\n",locMaxIndex);
 		//printf("%d\n",sampsafter+sampsbefore+1 );
 
 		Q = locMaxIndex + floor(fs/2);
 
 	}
-
-	for(int i=0;i<sampsbefore+sampsafter+1;i++){
-
-
-	}
+	free(hA);
 
 	printf("Building Image Array\n");
 
@@ -426,18 +395,19 @@ int main() {
 
 	for(int i=0;i<sampsbefore+sampsafter+1;i++){
 
+		synclocs[i] = synclocs[i];
+		// synclocsfile << "," << synclocs[i];
 		for(int j = 0;j < floor(fs/2);j++){
 
 			obuf[i*int(floor(fs/2))+j] = outconv[synclocs[i]+j];
-			//outfile<<","<<img[i][j];
+			
 
 		}
 
 		
 	}
-	outfile << std::endl;
-	outfile.close();
 
+	free(outconv);
 	double minAmp = 0;
 	maxAmp = 0;
 
@@ -468,30 +438,40 @@ int main() {
 
 	}
 
-
-
-	std::vector<int> compression_params;
-    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
-    compression_params.push_back(9);
+	// std::vector<int> compression_params;
+ //    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
+ //    compression_params.push_back(9);
     //float datak[2][5] = {{1,2,3,4,5},{7,8,9,10,11}};
     
 
 	cv::Mat A = cv::Mat(sampsbefore+sampsafter+1,floor(fs/2), CV_64FC1, obuf);
 
+	free(obuf);
+
 	printf("Resizing Image\n");
 
-	cv::resize(A,A,cv::Size(2080, sampsbefore+sampsafter+1),cv::INTER_CUBIC);
-	cv::transpose(A,A);
-	cv::flip(A,A,1);
-	cv::transpose(A,A);
-	cv::flip(A,A,1);
+	cv::resize(A,A,cv::Size(2080, sampsbefore+sampsafter+1),cv::INTER_AREA);
+	// cv::transpose(A,A);
+	// cv::flip(A,A,1);
+	// cv::transpose(A,A);
+	// cv::flip(A,A,1);
 
 	printf("Storing Image\n");
 
-	cv::imwrite( "wut.jpg", A);
+	cv::imwrite(argv[2], A);
 	
 	printf("DONE\n");
 	fclose(fp);
+
+	// sqrwav << std::endl;
+	// procwav << std::endl;
+	// resultwav << std::endl;
+	// synclocsfile << std::endl;
+	// sqrwav.close();
+	// procwav.close();
+	// resultwav.close();
+	// synclocsfile.close();
+
 	return 0;
 
 }
@@ -652,39 +632,68 @@ int blockAlign(FILE * fp, unsigned char * buf){
 
 }
 
-double *conv(double *A, double *B, int lenA, int lenB, int *lenC)
+double *conv(double *A, int lenA, double *B, int lenB,
+		int *lenC, char *cmethod)
 {
 	int nconv;
 	int i, j, i1;
+	int nb;
 	double tmp;
-	double *C;
+	double *C=NULL;
+	double *Result=NULL;
  
-	//allocated convolution array	
-	nconv = lenA+lenB-1;
-	C = (double*) calloc(nconv, sizeof(double));
-
+	nb = 0;
+ 
+	//allocated convolution array
+	nconv = lenA + lenB - 1;
+	C = (double*) calloc (nconv, sizeof(double));
+ 
 	//convolution process
-	for (i=0; i<nconv; i++)
+	for (i = 0; i < nconv; i++)
 	{
 		i1 = i;
 		tmp = 0.0;
-		for (j=0; j<lenB; j++)
+		for (j = 0; j < lenB; j++)
 		{
-			if(i1>=0 && i1<lenA)
-				tmp = tmp + ((double)A[i1]*B[j]);
+			if (i1 >= 0 && i1 < lenA)
+				tmp = tmp + (A[i1] * B[j]);
  
-			i1 = i1-1;
+			i1 = i1 - 1;
 			C[i] = tmp;
 		}
-
 	}
- 	
-	//get length of convolution array	
-	(*lenC) = nconv;
-
  
-	//return convolution array
-	return(C);
+	//-----------------------------------------------------
+	//create the result
+	//-----------------------------------------------------
+	if (strcmp(cmethod, "full") == 0)
+	{
+		//get length of convolution array
+		*lenC = nconv;
+		return (C);
+	}
+	else if (strcmp(cmethod, "same") == 0)
+	{
+		*lenC = lenA;
+		nb = (lenB - 1) % 2;
+		if (nb != 0)
+			nb = (lenB + 1) / 2;
+		else
+			nb = (lenB - 1) / 2;
+ 
+		Result = (double*) calloc(lenA, sizeof(double));
+		for (i = 0; i < lenA; i++)
+			Result[i] = C[nb + i];
+ 
+		free(C);
+		return (Result);
+	}
+	else //default=full method
+	{
+		//get length of convolution array
+		*lenC = nconv;
+		return (C);
+	}
 }
 
 
@@ -709,3 +718,7 @@ double *filterBUT(double * B, double * A, double * X, double * Zi, int input_siz
     //Zi.resize(filter_order - 1);
     return Y;
 }
+
+
+
+
