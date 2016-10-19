@@ -3,6 +3,14 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
+#include <fstream>      // std::ofstream
+#include "filt.h"
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/video/video.hpp"
+#include "opencv2/imgcodecs/imgcodecs.hpp"
+
 
 
 
@@ -35,10 +43,13 @@ double Zi[3] = {0,0,0};
 
 int main() {
 
+	std::ofstream outfile;
+	outfile.open("result.csv");
+
 	FILE * fp;
 	FILE * pFile;
 	
-	fp = fopen("mono_best.wav","rb");
+	fp = fopen("satmatt3.wav","rb");
 
 	if(!fp){
 		printf("Unable to open file");
@@ -95,15 +106,17 @@ int main() {
 
 	//else if(bitSamp == 16){
 
-		int * abuf;
-		double * bbuf;
+		double * abuf;
+		double * obuf;
+		int * cbuf;
 		double * sqbuf;
 		double * hA;
-		abuf = (int *) malloc(audioBufSize/sizeof(unsigned char)*sizeof(int));
-		bbuf = (double *) malloc(audioBufSize/sizeof(unsigned char)*sizeof(double));
+		abuf = (double *) malloc(audioBufSize/sizeof(unsigned char)*sizeof(double));
+		cbuf = (int *) malloc(audioBufSize/sizeof(unsigned char)*sizeof(int));
 
 
-		int sqbufsize = floor(32.0*fs/4160.0);  // Ts of sync wave
+
+		int sqbufsize = floor(39.0*fs/4160.0);  // Ts of sync wave
 		double tau = 1.0/4160.0;
 		double timeCount = 0;
 		printf("Square Pulse Array Size:  ");
@@ -111,37 +124,62 @@ int main() {
 
 		sqbuf = (double *) malloc(sqbufsize/sizeof(unsigned char)*sizeof(double));
 
+
+		double sT = 1/4160.0;
+		double freq = (2*3.14)/(4*sT*fs);
+
 		for(int i = 0;i<sqbufsize;i++){
 
-			timeCount = timeCount + (1.0/fs);
-			sqbuf[i] = 0;
+			sqbuf[i] = sin(freq * i)>=0?1:0;
 
-			for(int j =0; j<28;j=j+4){
-
-				// printf("%f\n",(4*j)*tau );
-				// printf("%f\n",(6*j)*tau );
-				// printf("%f\n\n",timeCount );
-
-				if(timeCount<((6+j)*tau) && timeCount>=((4+j)*tau)){
-
-					sqbuf[i] = 1;
-
-				}
-
-
+			if(i<floor(4*fs*sT)){
+				sqbuf[i] = 0;
 			}
-			//printf("%d\n", sqbuf[i]);
-			//printf("-------------\n");
+			if(i>floor(32*fs*sT)){
 
+				sqbuf[i] = 0;
+			}
+			
 		}
+
+
+
+
+
+		// for(int i = 0;i<sqbufsize;i++){
+
+		// 	timeCount = timeCount + (1.0/fs);
+		// 	sqbuf[i] = 0;
+
+		// 	for(int j =0; j<28;j=j+4){
+
+		// 		// printf("%f\n",(4*j)*tau );
+		// 		// printf("%f\n",(6*j)*tau );
+		// 		// printf("%f\n\n",timeCount );
+
+		// 		if(timeCount<((6+j)*tau) && timeCount>=((4+j)*tau)){
+
+		// 			sqbuf[i] = 1;
+
+		// 		}
+
+
+		// 	}
+		// 	//printf("%d\n", sqbuf[i]);
+		// 	//printf("-------------\n");
+			
+		// 	outfile<<","<<sqbuf[i];
+		// }
 
 
 		for(int i = 0;i<audioBufSize/2;i++){
 
-			abuf[i] = buf[i*2] | ( (int)buf[i*2+1] << 8 ) | ( 0 << 16 ) | ( 0 << 24 );
+			abuf[i] = int16_t(buf[i*2] | ( (int16_t)buf[i*2+1] << 8 ) | ( 0 << 16 ) | ( 0 << 24 ));
+			
+			
 			//printf("%d\n",abuf[i] );
 			//3839815
-
+			
 			
 		}
 
@@ -149,50 +187,90 @@ int main() {
 
 	//}
 
-	double maxAmp = abs(abuf[0]);
+	double maxAmp = fabs(abuf[0]);
 	double sumVal = 0;
 	int maxAmpIndex = 0;
 
 	for(int i =0;i<audioBufSize/2;i++){
 
-		
-		if(maxAmp<abs(abuf[i])){
+		if(maxAmp<fabs(abuf[i])){
 
-			maxAmp = abs(abuf[i]);
+			maxAmp = fabs(abuf[i]);
 
 		}
+
+
+	}
+	
+	printf("Max Amplitude:  ");
+	printf("%f\n",maxAmp );
+
+
+	//Normalize
+	for(int i =0;i<audioBufSize/2;i++){
+
+		abuf[i] = abuf[i]/maxAmp;
+
+
+		// if(bbuf[i]<0){
+		// 	bbuf[i] = -1*bbuf[i];
+		// }
+
+	}
+	//find mean
+	for(int i =0;i<audioBufSize/2;i++){
 
 		sumVal = sumVal + abuf[i];
 
 	}
-	double avgVal = sumVal/audioBufSize/2/maxAmp;
-	printf("Max Amplitude:  ");
-	printf("%f\n",maxAmp );
+
+	double avgVal = sumVal/audioBufSize/2;
+
 	printf("Average Normalized Value:  ");
 	printf("%f\n",avgVal );
 
 
+	//Center
 	for(int i =0;i<audioBufSize/2;i++){
 
-		bbuf[i] = abuf[i]/maxAmp-avgVal;
+		abuf[i] = abuf[i]-avgVal;
 
-		if(bbuf[i]<0){
-			bbuf[i] = -1*bbuf[i];
-		}
-
+		// if(bbuf[i]<0){
+		// 	bbuf[i] = -1*bbuf[i];
+		// }
 
 	}
-	free(abuf);
+	//Rectify
+	for(int i =0;i<audioBufSize/2;i++){
 
-	outconv = filterBUT(Bcoe,Acoe,bbuf,Zi,audioBufSize/2,3);
 
-	// for(int i =0; i<audioBufSize/2;i++){
+		if(abuf[i]<0){
+			abuf[i] = -1*abuf[i];
+		}
+		
+	}
 
-	// 	printf("%f\n",outconv[i] );
-	// }
+//	outconv = filterBUT(Bcoe,Acoe,abuf,Zi,audioBufSize/2,3);
 
-	free(bbuf);
-	printf("Convolved\n");
+
+	Filter *my_filter;
+	double filtered_sample;
+	double next_sample;
+
+	my_filter = new Filter(LPF, 51, fs, 1000.0);
+  
+  	for(int i =0;i<audioBufSize/2;i++){
+
+ 		next_sample = abuf[i];
+  		filtered_sample = my_filter->do_sample( next_sample );
+  		abuf[i] = filtered_sample;
+
+	}
+	delete my_filter;
+	outconv = abuf;
+
+
+	printf("Convolved with filter\n");
 
 	sumVal =0.0;
 	maxAmp =0.0;
@@ -200,36 +278,56 @@ int main() {
 	for(int i =0;i<audioBufSize/2;i++){
 
 		
-		if(maxAmp<fabs(outconv[i])){
+		// if(maxAmp<fabs(outconv[i])){
 
-			maxAmp = fabs(outconv[i]);
+		// 	maxAmp = fabs(outconv[i]);
 
-
-
-		}
+		// }
+		//outfile<<","<<outconv[i];
 
 		sumVal = sumVal + outconv[i];
 
 	}
 
-	avgVal = sumVal/(audioBufSize/2)/maxAmp;
-	printf("Max Amplitude After Conv:  ");
-	printf("%f\n",maxAmp );
+	avgVal = sumVal/(audioBufSize/2);
 	printf("Average Normalized Value After Conv:  ");
 	printf("%f\n",avgVal );
 
 	for(int i =0;i<audioBufSize/2;i++){
 
-		outconv[i] = (outconv[i]/-avgVal)/maxAmp;
+		outconv[i] = (outconv[i]-avgVal);
 
-		if(outconv[i]<0){
-			outconv[i] = -1*outconv[i];
+
+	}
+	for(int i =0;i<audioBufSize/2;i++){
+		
+		if(maxAmp<fabs(outconv[i])){
+
+			maxAmp = fabs(outconv[i]);
+
 		}
+
+	}
+	printf("Max Amplitude After Conv:  ");
+	printf("%f\n",maxAmp );
+
+	for(int i =0;i<audioBufSize/2;i++){
+
+		outconv[i] = (outconv[i]/maxAmp);
+ 		
+
+	}
+
+
+
+	hA = conv(outconv,sqbuf,audioBufSize/2,sqbufsize,&lenhA);
+
+	for(int i =0;i<lenhA;i++){
+
 		
 
 	}
 
-	hA = conv(outconv,sqbuf,audioBufSize/2,sqbufsize,&lenhA);
 	printf("Square Pulse Convolution Done\n");
 
 	maxAmp =0.0;
@@ -244,22 +342,27 @@ int main() {
 
 
 	}
+
+
+
 	printf("Max Amplitude of Coorelated Signal:  ");
 	printf("%f\n",maxAmp);
 	printf("Index of Max Amplitude:  ");
 	printf("%d\n",maxAmpIndex);
 
-	int sampsbefore = floor(maxAmpIndex/(fs/2));
-	int sampsafter = floor((lenhA-maxAmpIndex)/(fs/2));
+	int sampsbefore = floor(maxAmpIndex/(fs/2))-5;
+	int sampsafter = floor((lenhA-maxAmpIndex)/(fs/2))-5;
 	int Q =0;
 	int j ;
 	double locMax;
 	int locMaxIndex;
 	Q = floor(maxAmpIndex - (fs/2));
 	int search =7; //move to user configurable, change with samp rate?
-
+	printf("Searching Back\n");
 	int * synclocs;
 	synclocs = (int *) malloc((sampsbefore+sampsafter+1)*sizeof(int));
+
+
 
 	for(int i = 0; i< sampsbefore;i++){
 		//printf("do work\n");
@@ -286,6 +389,8 @@ int main() {
 
 	synclocs[sampsbefore] = maxAmpIndex;
 
+	printf("Searching Forward\n");
+
 	Q = floor(maxAmpIndex + (fs/2));
 	for(int i = 0; i< sampsafter;i++){
 		//printf("do work\n");
@@ -309,62 +414,81 @@ int main() {
 
 	}
 
-	
-	double **img =(double**) malloc((sampsbefore+sampsafter+1)*sizeof(double*));
-	maxAmp = 0;
 	for(int i=0;i<sampsbefore+sampsafter+1;i++){
 
-		img[i] = (double*)malloc(double(fs/2)*sizeof(double));
+
+	}
+
+	printf("Building Image Array\n");
+
+	obuf = (double *) malloc(((sampsbefore+sampsafter+1)*floor(fs/2))/sizeof(unsigned char)*sizeof(double));
+	maxAmp = 0;
+
+	for(int i=0;i<sampsbefore+sampsafter+1;i++){
+
 		for(int j = 0;j < floor(fs/2);j++){
 
-			img[i][j] = outconv[synclocs[i]+j];
-			if(img[i][j]>maxAmp){
+			obuf[i*int(floor(fs/2))+j] = outconv[synclocs[i]+j];
+			//outfile<<","<<img[i][j];
 
-				
-				// if(img[i][j]>30.0){
-
-				// 	img[i][j] =0.0;
-
-				// }
-				maxAmp = img[i][j];
-				
-				//printf("%f\n",img[i][j] );
-
-			}
-			
 		}
-	}
-	// printf("%f\n",maxAmp );
-
-	// for(int i=0;i<sampsbefore+sampsafter+1;i++){
 
 		
-	// 	for(int j = 0;j < floor(fs/2);j++){
+	}
+	outfile << std::endl;
+	outfile.close();
 
-	// 		img[i][j] = img[i][j]/maxAmp;
-	// 		//printf("%f\n",img[i][j] );
+	double minAmp = 0;
+	maxAmp = 0;
 
-	// 	}
-	// }
+	for(int i=0;i<(sampsbefore+sampsafter+1)*int(floor(fs/2));i++){
 
-	// vector<int> compression_params;
- //    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
- //    compression_params.push_back(9);
+		if(obuf[i]<minAmp){
+
+			minAmp = obuf[i];
+
+		}
+	}
+
+
+	maxAmp = 0;
+	for(int i=0;i<(sampsbefore+sampsafter+1)*int(floor(fs/2));i++){
+
+		obuf[i] = obuf[i] + fabs(minAmp);
+
+		if(obuf[i]>maxAmp){
+
+			maxAmp = obuf[i];
+
+		}
+	}
+	for(int i=0;i<(sampsbefore+sampsafter+1)*int(floor(fs/2));i++){
+
+		obuf[i] = obuf[i]/maxAmp*255;
+
+	}
+
+
+
+	std::vector<int> compression_params;
+    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
+    compression_params.push_back(9);
     //float datak[2][5] = {{1,2,3,4,5},{7,8,9,10,11}};
     
 
-	//Mat A = Mat(sampsbefore+sampsafter+1, floor(fs/2), CV_64FC1, img);
+	cv::Mat A = cv::Mat(sampsbefore+sampsafter+1,floor(fs/2), CV_64FC1, obuf);
 
-	
+	printf("Resizing Image\n");
 
+	cv::resize(A,A,cv::Size(2080, sampsbefore+sampsafter+1),cv::INTER_CUBIC);
+	cv::transpose(A,A);
+	cv::flip(A,A,1);
+	cv::transpose(A,A);
+	cv::flip(A,A,1);
 
+	printf("Storing Image\n");
 
-
-	// for(int i =0;i< (sampsbefore+sampsafter+1);i++){
-
-	// 	printf("%d\n",synclocs[i] );
-
-	// }
+	cv::imwrite( "wut.jpg", A);
 	
 	printf("DONE\n");
 	fclose(fp);
