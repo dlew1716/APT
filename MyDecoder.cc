@@ -41,6 +41,12 @@ char convmode[] = "full";
 
 int main(int argc, char *argv[] ) {
 
+
+	printf("%lu\n", sizeof(int)    );
+	printf("%lu\n", sizeof(double) );
+	printf("%lu\n", sizeof(char)   );
+	printf("%lu\n", sizeof(int16_t));
+
 	//DEBUG FILES
 	// std::ofstream procwav;
 	// procwav.open("procwav.csv");
