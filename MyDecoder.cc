@@ -9,7 +9,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/video/video.hpp"
-#include "opencv2/imgcodecs/imgcodecs.hpp"
+//#include "opencv2/imgcodecs/imgcodecs.hpp"
 
 
 bool isRiff(FILE * fp,unsigned char * buf);
@@ -125,67 +125,58 @@ int main(int argc, char *argv[] ) {
 
 	//else if(bitSamp == 16){
 
-		double * abuf;
-		double * obuf;
-		int * cbuf;
-		double * sqbuf;
-		//double * sqbuf2;
-		double * hA;
-		abuf = (double *) malloc(audioBufSize/sizeof(unsigned char)*sizeof(double));
-		cbuf = (int *) malloc(audioBufSize/sizeof(unsigned char)*sizeof(int));
+	double * abuf;
+	double * obuf;
+	int * cbuf;
+	double * sqbuf;
+	//double * sqbuf2;
+	double * hA;
+	abuf = (double *) malloc(audioBufSize/sizeof(unsigned char)*sizeof(double));
+	cbuf = (int *) malloc(audioBufSize/sizeof(unsigned char)*sizeof(int));
 
 
 
-		int sqbufsize = floor(39.0*fs/4160.0);  // Ts of sync wave
-		double tau = 1.0/4160.0;
-		double timeCount = 0;
-		printf("Square Pulse Array Size:  ");
-		printf("%d\n",sqbufsize);
+	int sqbufsize = floor(39.0*fs/4160.0);  // Ts of sync wave
+	double tau = 1.0/4160.0;
+	double timeCount = 0;
+	printf("Square Pulse Array Size:  ");
+	printf("%d\n",sqbufsize);
 
-		sqbuf = (double *) malloc(sqbufsize/sizeof(unsigned char)*sizeof(double));
-		//sqbuf2 = (double *) malloc(sqbufsize/sizeof(unsigned char)*sizeof(double));
+	sqbuf = (double *) malloc(sqbufsize/sizeof(unsigned char)*sizeof(double));
+	//sqbuf2 = (double *) malloc(sqbufsize/sizeof(unsigned char)*sizeof(double));
 
 
-		double sT = 1/4160.0;
-		double freq = (2*3.14)/(4*sT*fs);
+	double sT = 1/4160.0;
+	double freq = (2*3.14)/(4*sT*fs);
 
-		for(int i = 0;i<sqbufsize;i++){
+	for(int i = 0;i<sqbufsize;i++){
 
-			sqbuf[i] = sin(freq * i)>=0?1:-1;
+		sqbuf[i] = sin(freq * i)>=0?1:-1;
 
-			if(i<floor(4*fs*sT)){
-				sqbuf[i] = 0;
-			}
-			if(i>floor(32*fs*sT)){
-
-				sqbuf[i] = 0;
-			}
-			// sqrwav << "," << sqbuf[i];
-			
+		if(i<floor(4*fs*sT)){
+			sqbuf[i] = 0;
 		}
+		if(i>floor(32*fs*sT)){
 
-
-		// for(int i = 0;i<sqbufsize;i++){
-
-		// 	sqbuf2[i] = sin(freq * i)+0.7>=0?1:-1;
-
-		// 	if(i<floor(4*fs*sT)){
-		// 		sqbuf2[i] = 0;
-		// 	}
-
-			
-		// }
-
-
-		for(int i = 0;i<audioBufSize/2;i++){
-
-			abuf[i] = int16_t(buf[i*2] | ( (int16_t)buf[i*2+1] << 8 ) | ( 0 << 16 ) | ( 0 << 24 ));
-
+			sqbuf[i] = 0;
 		}
+		// sqrwav << "," << sqbuf[i];
+		
+	}
 
+	// for(int i = 0;i<sqbufsize;i++){
+	// 	sqbuf2[i] = sin(freq * i)+0.7>=0?1:-1;
+	// 	if(i<floor(4*fs*sT)){
+	// 		sqbuf2[i] = 0;
+	// 	}
+	// }
 
+	//Put two bytes into an Int16
+	for(int i = 0;i<audioBufSize/2;i++){
 
-	//}
+		abuf[i] = int16_t(buf[i*2] | ( (int16_t)buf[i*2+1] << 8 ) | ( 0 << 16 ) | ( 0 << 24 ));
+
+	}
 
 	double maxAmp = fabs(abuf[0]);
 	double sumVal = 0;
@@ -198,19 +189,15 @@ int main(int argc, char *argv[] ) {
 			maxAmp = fabs(abuf[i]);
 
 		}
-
-
 	}
 	
 	printf("Max Amplitude:  ");
 	printf("%f\n",maxAmp );
 
-
 	//Normalize
 	for(int i =0;i<audioBufSize/2;i++){
 
 		abuf[i] = abuf[i]/maxAmp;
-
 
 	}
 	//find mean
@@ -241,8 +228,6 @@ int main(int argc, char *argv[] ) {
 		}
 		
 	}
-
-//	outconv = filterBUT(Bcoe,Acoe,abuf,Zi,audioBufSize/2,3);
 
 	Filter *my_filter;
 	double filtered_sample;
@@ -297,7 +282,6 @@ int main(int argc, char *argv[] ) {
 
 		outconv[i] = (outconv[i]/maxAmp);
 		// procwav << "," << outconv[i];
-		
  		
 	}
 
@@ -336,8 +320,6 @@ int main(int argc, char *argv[] ) {
 	int * synclocs;
 	synclocs = (int *) malloc((sampsbefore+sampsafter+1)*sizeof(int));
 
-
-
 	for(int i = 0; i< sampsbefore;i++){
 		//printf("do work\n");
 
@@ -357,8 +339,6 @@ int main(int argc, char *argv[] ) {
 		Q = locMaxIndex - floor(fs/2);
 
 	}
-
-
 
 	synclocs[sampsbefore] = maxAmpIndex+1;
 
