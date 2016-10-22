@@ -449,6 +449,18 @@ int main(int argc, char *argv[] ) {
 
 	png.close();
 
+	pngwriter png2(10,10,1,argv[2]);
+
+	for(int i =0;i<10;i++){
+
+		for(int j = 0; j<10; j++){
+
+			png.plot(i,j, 0.5, 0.5,0.5);
+		}
+	}
+
+	png2.close();
+
 	// std::vector<int> compression_params;
  //    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
  //    compression_params.push_back(9);
