@@ -380,7 +380,7 @@ int main(int argc, char *argv[] ) {
 	}
 	free(hA);
 
-	printf("Building Image Array\n");
+	printf("Processing Image Array\n");
 
 
 	pngwriter png(floor(fs/2),sampsbefore+sampsafter+1,1,argv[2]);
@@ -434,6 +434,7 @@ int main(int argc, char *argv[] ) {
 
 	}
 
+	printf("Building Image Array\n");
 
 	for(int i=0;i<sampsbefore+sampsafter+1;i++){
 
@@ -446,8 +447,11 @@ int main(int argc, char *argv[] ) {
 		}
 
 	}
-	png.resize(2080,sampsbefore+sampsafter+1);
+	printf("Resizing Image\n");
+	//png.resize(2080,sampsbefore+sampsafter+1);
+	printf("Compressing\n");
 	png.setcompressionlevel(9);
+	printf("Saving\n");
 	png.close();
 
 	// pngwriter png2(10,10,1,argv[2]);
@@ -472,15 +476,13 @@ int main(int argc, char *argv[] ) {
 
 	free(obuf);
 
-	printf("Resizing Image\n");
+
 	
 	//cv::resize(A,A,cv::Size(2080, sampsbefore+sampsafter+1),cv::INTER_AREA);
 	// cv::transpose(A,A);
 	// cv::flip(A,A,1);
 	// cv::transpose(A,A);
 	// cv::flip(A,A,1);
-
-	printf("Storing Image\n");
 
 	//cv::imwrite(argv[2], A);
 
