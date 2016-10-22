@@ -441,7 +441,7 @@ int main(int argc, char *argv[] ) {
 
 			//printf("%f\n",obuf[i*int(floor(fs/2))+j]);
 			//png.plot(i*int(floor(fs/2)),j, obuf[i*int(floor(fs/2))+j], obuf[i*int(floor(fs/2))+j], obuf[i*int(floor(fs/2))+j]);
-			png.plot(i*int(floor(fs/2)),j, 0.5, 0,0);
+			png.plot(i*int(floor(fs/2)),j, 0.5, 0.5,0.5);
 
 		}
 
@@ -455,7 +455,7 @@ int main(int argc, char *argv[] ) {
 
 		for(int j = 0; j<10; j++){
 
-			png.plot(i,j, 0.5, 0.5,0.5);
+			png.plot(i,j, 0.5, 0.0,0.0);
 		}
 	}
 
