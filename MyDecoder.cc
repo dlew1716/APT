@@ -455,7 +455,7 @@ int main(int argc, char *argv[] ) {
 
 		for(int j = 1; j<11; j++){
 
-			png.plot(i,j, 0.5, 0.0,0.0);
+			png.plotHSV(i,j, 0.0, 0.0,0.5);
 		}
 	}
 
