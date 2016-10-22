@@ -48,10 +48,7 @@ int main(int argc, char *argv[] ) {
 
 
 
-	printf("%lu\n", sizeof(int)    );
-	printf("%lu\n", sizeof(double) );
-	printf("%lu\n", sizeof(char)   );
-	printf("%lu\n", sizeof(int16_t));
+	printf("%s\n", argv[1]);
 
 	//DEBUG FILES
 	// std::ofstream procwav;
