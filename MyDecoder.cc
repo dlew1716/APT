@@ -451,9 +451,9 @@ int main(int argc, char *argv[] ) {
 
 	pngwriter png2(10,10,1,argv[2]);
 
-	for(int i =0;i<10;i++){
+	for(int i =1;i<11;i++){
 
-		for(int j = 0; j<10; j++){
+		for(int j = 1; j<11; j++){
 
 			png.plot(i,j, 0.5, 0.0,0.0);
 		}
