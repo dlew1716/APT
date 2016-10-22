@@ -455,10 +455,10 @@ int main(int argc, char *argv[] ) {
 
 		for(int j = 1; j<11; j++){
 
-			png.plotHSV(i,j, 0.0, 0.0,0.5);
+			png2.plotHSV(i,j, 0.0, 0.0,0.5);
 		}
 	}
-
+	//arcoiris.setgamma(0.5);
 	png2.close();
 
 	// std::vector<int> compression_params;
