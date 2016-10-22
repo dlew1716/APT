@@ -439,7 +439,7 @@ int main(int argc, char *argv[] ) {
 
 		for(int j = 0;j < floor(fs/2);j++){
 
-			printf("%d\n",obuf[i*int(floor(fs/2))+j])
+			printf("%d\n",obuf[i*int(floor(fs/2))+j]);
 			png.plot(i*int(floor(fs/2)),j, obuf[i*int(floor(fs/2))+j], obuf[i*int(floor(fs/2))+j], obuf[i*int(floor(fs/2))+j]);
 
 		}
