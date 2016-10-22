@@ -440,13 +440,13 @@ int main(int argc, char *argv[] ) {
 		for(int j = 0;j < floor(fs/2);j++){
 
 			//printf("%f\n",obuf[i*int(floor(fs/2))+j]);
-			png.plotHSV(i+1,j+1, 0.0,0.0, obuf[i*int(floor(fs/2))+j]);
+			png.plotHSV(j+1,i+1, 0.0,0.0, obuf[i*int(floor(fs/2))+j]);
 			//png.plotHSV(i*int(floor(fs/2)),j, 0.5, 0.5,0.5);
 
 		}
 
 	}
-
+	png.setcompressionlevel(9);
 	png.close();
 
 	// pngwriter png2(10,10,1,argv[2]);
