@@ -9,6 +9,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/video/video.hpp"
+#include "pngbuild/include/pngwriter.h"
 //#include "opencv2/imgcodecs/imgcodecs.hpp"
 
 
@@ -24,6 +25,7 @@ int bitPerSamp(FILE * fp, unsigned char * buf);
 int subChunk2Size(FILE * fp, unsigned char * buf);
 double *filterBUT(double * B, double * A, double * X, double * Zi, int input_size, int filter_order);
 double *conv(double *A,  int lenA, double *B,int lenB, int *lenC,char *cmethod);
+//void downsampler(double *orgimg, int orgimgW, int orgimgH, int scaleimgW, int scaleimgH);
 double *outconv;
 int lenC=0;
 int lenhA =0;
@@ -40,6 +42,10 @@ char convmode[] = "full";
 
 
 int main(int argc, char *argv[] ) {
+
+
+	
+
 
 
 	printf("%lu\n", sizeof(int)    );
@@ -376,15 +382,19 @@ int main(int argc, char *argv[] ) {
 
 	printf("Building Image Array\n");
 
+
+	pngwriter png(2080,sampsbefore+sampsafter+1,0,argv[2]);
+
 	obuf = (double *) malloc(((sampsbefore+sampsafter+1)*floor(fs/2))/sizeof(unsigned char)*sizeof(double));
 	maxAmp = 0;
 
 	for(int i=0;i<sampsbefore+sampsafter+1;i++){
 
-		synclocs[i] = synclocs[i];
+		//synclocs[i] = synclocs[i];
 		// synclocsfile << "," << synclocs[i];
 		for(int j = 0;j < floor(fs/2);j++){
 
+			
 			obuf[i*int(floor(fs/2))+j] = outconv[synclocs[i]+j];
 			
 
@@ -424,19 +434,32 @@ int main(int argc, char *argv[] ) {
 
 	}
 
+
+	for(int i=0;i<sampsbefore+sampsafter+1;i++){
+
+		for(int j = 0;j < floor(fs/2);j++){
+
+			png.plot(i*int(floor(fs/2)),j, obuf[i*int(floor(fs/2))+j], obuf[i*int(floor(fs/2))+j], obuf[i*int(floor(fs/2))+j]);
+
+		}
+
+	}
+
+	png.close();
+
 	// std::vector<int> compression_params;
  //    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
  //    compression_params.push_back(9);
     //float datak[2][5] = {{1,2,3,4,5},{7,8,9,10,11}};
     
-
-	cv::Mat A = cv::Mat(sampsbefore+sampsafter+1,floor(fs/2), CV_64FC1, obuf);
+	//downsampler(obuf,floor(fs/2),sampsbefore+sampsafter+1,2080,2);
+	//cv::Mat A = cv::Mat(sampsbefore+sampsafter+1,2080, CV_64FC1, obuf);
 
 	free(obuf);
 
 	printf("Resizing Image\n");
-
-	cv::resize(A,A,cv::Size(2080, sampsbefore+sampsafter+1),cv::INTER_AREA);
+	
+	//cv::resize(A,A,cv::Size(2080, sampsbefore+sampsafter+1),cv::INTER_AREA);
 	// cv::transpose(A,A);
 	// cv::flip(A,A,1);
 	// cv::transpose(A,A);
@@ -444,7 +467,20 @@ int main(int argc, char *argv[] ) {
 
 	printf("Storing Image\n");
 
-	cv::imwrite(argv[2], A);
+	//cv::imwrite(argv[2], A);
+
+	// double * testarr;
+	// testarr = (double *) malloc(9/sizeof(unsigned char)*sizeof(double));
+	// for(int i =0;i<16;i++){
+
+	// 	testarr[i] = i;
+	// }
+	// downsampler(testarr,4,4,2,2);
+
+	// for(int i =0;i<8;i++){
+
+	// 	printf("%f\n",testarr[i] );
+	// }
 	
 	printf("DONE\n");
 	fclose(fp);
@@ -461,6 +497,40 @@ int main(int argc, char *argv[] ) {
 	return 0;
 
 }
+
+
+// 
+
+// void downsampler(double *orgimg, int orgimgW, int orgimgH,int scaleimgW, int scaleimgH){
+
+// 	// if(scaleimgW > orgimgW ){
+
+// 	// 	printf("Error\n");
+
+// 	// }
+// 	int scaleDist = orgimgW - scaleimgW;
+
+// 	printf("%d\n",scaleDist );
+
+// 	for (int k =0; k<scaleDist;k++){
+
+// 		for (int i = 0; i<orgimgH; i++){
+
+// 			for(int j = 0; j<orgimgW-1;j++){
+
+// 				orgimg[i*orgimgW+j-i] = (orgimg[i*orgimgW+j] + orgimg[i*orgimgW+j+1])/2;
+
+// 			}
+
+// 		}
+
+// 		orgimgW = orgimgW - 1;
+// 	}
+
+// 	orgimg = (double *) realloc(orgimg,(orgimgW*orgimgH)/sizeof(unsigned char)*sizeof(double));
+
+// }
+
 
 bool isRiff(FILE * fp,unsigned char * buf){
 	//Checks if the file follows riff format by checking first 4 bytes
