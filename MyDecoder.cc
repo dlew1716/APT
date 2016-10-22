@@ -446,6 +446,7 @@ int main(int argc, char *argv[] ) {
 		}
 
 	}
+	png.resize(2080,sampsbefore+sampsafter+1);
 	png.setcompressionlevel(9);
 	png.close();
 
