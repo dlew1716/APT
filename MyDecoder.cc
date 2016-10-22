@@ -9,7 +9,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/video/video.hpp"
-#include "build/include/pngwriter.h"
+#include "pngwriter.h"
 //#include "opencv2/imgcodecs/imgcodecs.hpp"
 
 
