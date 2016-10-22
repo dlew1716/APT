@@ -383,7 +383,7 @@ int main(int argc, char *argv[] ) {
 	printf("Building Image Array\n");
 
 
-	pngwriter png(2080,sampsbefore+sampsafter+1,0,argv[2]);
+	pngwriter png(floor(fs/2),sampsbefore+sampsafter+1,0,argv[2]);
 
 	obuf = (double *) malloc(((sampsbefore+sampsafter+1)*floor(fs/2))/sizeof(unsigned char)*sizeof(double));
 	maxAmp = 0;
@@ -439,7 +439,7 @@ int main(int argc, char *argv[] ) {
 
 		for(int j = 0;j < floor(fs/2);j++){
 
-			printf("%d\n",obuf[i*int(floor(fs/2))+j]);
+			//printf("%f\n",obuf[i*int(floor(fs/2))+j]);
 			png.plot(i*int(floor(fs/2)),j, obuf[i*int(floor(fs/2))+j], obuf[i*int(floor(fs/2))+j], obuf[i*int(floor(fs/2))+j]);
 
 		}
