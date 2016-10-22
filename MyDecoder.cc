@@ -430,7 +430,7 @@ int main(int argc, char *argv[] ) {
 	}
 	for(int i=0;i<(sampsbefore+sampsafter+1)*int(floor(fs/2));i++){
 
-		obuf[i] = obuf[i]/maxAmp*255;
+		obuf[i] = obuf[i]/maxAmp;
 
 	}
 
