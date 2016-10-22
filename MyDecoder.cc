@@ -448,7 +448,7 @@ int main(int argc, char *argv[] ) {
 
 	}
 	printf("Resizing Image\n");
-	//png.resize(2080,sampsbefore+sampsafter+1);
+	png.scale_wh(2080,sampsbefore+sampsafter+1);
 	printf("Compressing\n");
 	png.setcompressionlevel(9);
 	printf("Saving\n");
