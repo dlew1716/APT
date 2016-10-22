@@ -383,7 +383,7 @@ int main(int argc, char *argv[] ) {
 	printf("Building Image Array\n");
 
 
-	pngwriter png(floor(fs/2),sampsbefore+sampsafter+1,0,argv[2]);
+	pngwriter png(floor(fs/2),sampsbefore+sampsafter+1,1,argv[2]);
 
 	obuf = (double *) malloc(((sampsbefore+sampsafter+1)*floor(fs/2))/sizeof(unsigned char)*sizeof(double));
 	maxAmp = 0;
