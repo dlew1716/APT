@@ -430,7 +430,7 @@ int main(int argc, char *argv[] ) {
 	}
 	for(int i=0;i<(sampsbefore+sampsafter+1)*int(floor(fs/2));i++){
 
-		obuf[i] = obuf[i]/maxAmp;
+		obuf[i] = obuf[i]/maxAmp*65535;
 
 	}
 
@@ -439,7 +439,7 @@ int main(int argc, char *argv[] ) {
 
 		for(int j = 0;j < floor(fs/2);j++){
 
-			png.plot(i*int(floor(fs/2)),j, obuf[i*int(floor(fs/2))+j], obuf[i*int(floor(fs/2))+j], obuf[i*int(floor(fs/2))+j]);
+			png.plot(i*int(floor(fs/2)),j, int(obuf[i*int(floor(fs/2))+j]), int(obuf[i*int(floor(fs/2))+j]), int(obuf[i*int(floor(fs/2))+j]));
 
 		}
 
