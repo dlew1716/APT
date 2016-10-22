@@ -440,8 +440,8 @@ int main(int argc, char *argv[] ) {
 		for(int j = 0;j < floor(fs/2);j++){
 
 			//printf("%f\n",obuf[i*int(floor(fs/2))+j]);
-			//png.plot(i*int(floor(fs/2)),j, obuf[i*int(floor(fs/2))+j], obuf[i*int(floor(fs/2))+j], obuf[i*int(floor(fs/2))+j]);
-			png.plot(i*int(floor(fs/2)),j, 0.5, 0.5,0.5);
+			png.plotHSV(i*int(floor(fs/2)),j, 0.0,0.0, obuf[i*int(floor(fs/2))+j]);
+			//png.plotHSV(i*int(floor(fs/2)),j, 0.5, 0.5,0.5);
 
 		}
 
@@ -449,17 +449,17 @@ int main(int argc, char *argv[] ) {
 
 	png.close();
 
-	pngwriter png2(10,10,1,argv[2]);
+	// pngwriter png2(10,10,1,argv[2]);
 
-	for(int i =1;i<11;i++){
+	// for(int i =1;i<11;i++){
 
-		for(int j = 1; j<11; j++){
+	// 	for(int j = 1; j<11; j++){
 
-			png2.plotHSV(i,j, 0.0, 0.0,0.5);
-		}
-	}
-	//arcoiris.setgamma(0.5);
-	png2.close();
+	// 		png2.plotHSV(i,j, 0.0, 0.0,0.5);
+	// 	}
+	// }
+	// //arcoiris.setgamma(0.5);
+	// png2.close();
 
 	// std::vector<int> compression_params;
  //    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
